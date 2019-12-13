@@ -1,10 +1,8 @@
-# データセット
+# Dataset
 
-ディープラーニングするためのデータセット。
+Constructed by (https://github.com/yoyoyo-yo)
+thank you!
 
-こんなディレクトリ構成になってる。
-
-*seg_images* はセグメンテーションのデータ。（こちらを使用した https://github.com/wkentaro/labelme ）
 
 ```bash
 train ----- images ----- akahara --- akahara_000[1-8].jpg
