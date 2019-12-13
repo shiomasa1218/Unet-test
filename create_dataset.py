@@ -12,6 +12,4 @@
 #     name: python3
 # ---
 
-# ### image recognization
-
 
