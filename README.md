@@ -1,3 +1,3 @@
 # readme
 
-this is portforio and training note
+this is shio's portforio and training note 
