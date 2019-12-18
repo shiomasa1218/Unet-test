@@ -179,4 +179,87 @@ def data_load(path, hf=False, vf=False):
             x = x[..., ::-1]
             xs.append(x)
             
-            gt_path
+            gt_path = path.replace("images","seg_images").replace(".jpg",".png")
+            gt = cv2.imread(gt_path)
+            gt = resize(gt,(out_width,out_height), interpolation=cv2.INTER_NEAREST)
+            
+            t = np.zeros((out_height, out_width), dtype=np.int)
+            
+            for i (_,vs) in enumerate(CLS.items()):
+                ind = (gt[...,0] = vs[0])*(gt[...,1] == vs[1])*(gt[...,2] == vs[2])
+                t[ind] = i+1
+                
+                ts.append(t)
+                paths.append(path)
+                
+                if hf:
+                    xs.append(x[:,::-1])
+                    ts.append(t[:,::-1])
+                    paths.append(path)
+                    
+                if vf:
+                    xs.append(x[::-1])
+                    ts.append(t[::-1])
+                    paths.append(path)
+                    
+                if hf and vf
+                    xs.append(x[::-1, ::-1])
+                    ts.append(t[::-1, ::-1])
+                    paths.append(path)
+    
+    xs = np.array(xs)
+    ts = np.array(ts)
+    xs = xs.transpose(0,3,1,2)
+    return xs, ts, paths
+
+
+def train():
+    device = torch.device("cuda" if GPU else "cpu")
+    
+    model = UNet().to(device)
+    opt = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+    model.train()
+    
+    xs, ts, paths = data_load('Dataset/train/images/', hf=True, vf=True)
+    
+    mb = 4
+    mbi = 0
+    train_N = len(xs)
+    train_ind = np.arange(train_N)
+    np.random.seed(0)
+    np.random.shuffle(train_ind)
+    
+    for i in range(100):
+        if mbi+mb > train_N:
+            mb_ind = train_N[mbi:]
+            np.random.shuffle(train_ind)
+            mb_ind = np.hstack((mb_ind, train_ind[:(mb - (train_N - mbi))]))
+            mbi = mb - (train_N - mbi)
+        else:
+            mb_ind = train_ind[mbi: mbi+mb]
+            mbi += mb
+            
+        x = torch.tensor(xs[mb_ind], dtype=torch.float).to(device)
+        t = torch.tensor(ts[mb_ind], dtype=torch.float).to(device)
+        
+        # zero_grad: initialization
+        opt.zero_grad()
+        y = model(x)
+        
+        # permute: like np.transpose
+        # contiguous : values remapping on contiguous memory region
+        y = y.permute(0,2,3,1).contiguous()
+        y = y.view(-1, num_classes+1)
+        t = t.view(-1)
+        
+        y = F.log_softmax(y,dim=1)
+        loss = torch.nn.CrossentropyLoss()(y,t)
+        loss.backward()
+        opt.step()
+        
+        pred = y.argmax(dim=1, keepdim=True)
+        acc = pred.eq(t.view_as(pred)).sum().item()/ mb / img_height / img_width
+        
+        print("iter >>", i+1, ",loss >>", loss.item(), ",acc >>",acc)
+        
+    torch.save(model.state_dict(),"cnn.pt")
