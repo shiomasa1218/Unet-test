@@ -117,7 +117,7 @@ class UNet(torch.nn.Module):
             f = base*2 if i == 0 else base
             self.dec1.add_module("dec1_{}".format(i+1), torch.nn.Conv2d(f, base, kernel_size=3, padding=0, stride=1))
             self.dec1.add_module("dec1_relu_{}".format(i+1), torch.nn.ReLU())
-            self.dec1.add_module("dec1_bn_{}".format(i+1), troch.nn.BatchNorm2d(base))
+            self.dec1.add_module("dec1_bn_{}".format(i+1), torch.nn.BatchNorm2d(base))
             
         self.out = torch.nn.Conv2d(base, num_classes+1, kernel_size=1, padding=0, stride=1)
         
