@@ -185,8 +185,8 @@ def data_load(path, hf=False, vf=False):
             
             t = np.zeros((out_height, out_width), dtype=np.int)
             
-            for i (_,vs) in enumerate(CLS.items()):
-                ind = (gt[...,0] = vs[0])*(gt[...,1] == vs[1])*(gt[...,2] == vs[2])
+            for i,(_,vs) in enumerate(CLS.items()):
+                ind = (gt[...,0] == vs[0])*(gt[...,1] == vs[1])*(gt[...,2] == vs[2])
                 t[ind] = i+1
                 
                 ts.append(t)
@@ -202,7 +202,7 @@ def data_load(path, hf=False, vf=False):
                     ts.append(t[::-1])
                     paths.append(path)
                     
-                if hf and vf
+                if hf and vf:
                     xs.append(x[::-1, ::-1])
                     ts.append(t[::-1, ::-1])
                     paths.append(path)
@@ -263,3 +263,66 @@ def train():
         print("iter >>", i+1, ",loss >>", loss.item(), ",acc >>",acc)
         
     torch.save(model.state_dict(),"cnn.pt")
+
+
+def test():
+    device = torch.device("cuda" if GPU else "cpu")
+    model = UNet().to(device)
+    model.eval()
+    model.load_state_dict(torch.load("cnn.pt"))
+    
+    xs, ts, paths = data_load("Dataset/test/images/")
+    
+    with torch.no_grad():
+        for i in range(len(path)):
+            x = xs[i]
+            t = ts[i]
+            path = paths[i]
+            
+            x = np.expend_dims(x, axis=0)
+            x = torch.tensor(x,dtype=torch.float).to(device)
+            
+            pred = model(x)
+            
+            pred = pred.permute(0,2,3,1).reshape(-1, num_classes+1)
+            pred = F.softmax(pred,dim=1)
+            pred = pred.reshape(-1,out_height, out_width, num_classes+1)
+            pred = pred.detach().cpu().numpy()[0]
+            pred = pred.argmax(axis=-1)
+            
+            out = np.zeros((out_height, out_width, 3),dtype=np.uint8)
+            for i, (_,vs) in enumerate(CLS.items()):
+                out[pred == (i+1)] = vs
+            
+            print("in {}".format(path))
+            
+            plt.subplot(1,2,1)
+            plt.imshow(x.detach().cpu().numpy()[0].tarnspose(1,2,0))
+            plt.subplot(1,2,2)
+            plt.imshow(out[...,::-1])
+            plt.show()
+
+
+def arg_parse():
+    parser = argparse.ArgumentParser(description="CNN implemented with keras")
+    parser.add_argument("--train", dest="train", action="store_true")
+    parser.add_argument("--test", dest="test", action="store_true")
+    args = parser.parse_args()
+    return args
+
+
+if __name__ == '__main__':
+    args = arg_parse()
+
+    if args.train:
+        train()
+    if args.test:
+        test()
+
+    if not (args.train or args.test):
+        print("please select train or test flag")
+        print("train: python main.py --train")
+        print("test:  python main.py --test")
+        print("both:  python main.py --train --test")
+
+
