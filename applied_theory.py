@@ -46,7 +46,7 @@ class FullyConnectedLayer():
         self.lr = lr
 
     def forward(self, feature_in):
-        self.x_in = feature_in
+        self.f_in = feature_in
         x = np.dot(feature_in, self.w)
         
         if self.b is not None:
@@ -54,23 +54,23 @@ class FullyConnectedLayer():
             
         if self.activation is not None:
             x = self.activation(x)
-        self.x_out = x
+        self.ys = x
         
         return x
 
     
     def backward(self, w_pro, grad_pro):
-        grad = np.dot(grad_pro, w_pro.T)
+        grad_u = np.dot(grad_pro, w_pro.T)
         if self.activation is sigmoid:
-            grad *= (self.x_out * (1 - self.x_out))
-        grad_w = np.dot(self.x_in.T, grad)
+            grad_u *= (self.ys * (1 - self.ys))
+        grad_w = np.dot(self.f_in.T, grad_u)
         self.w -= self.lr * grad_w
 
         if self.b is not None:
-            grad_b = np.dot(np.ones([grad.shape[0]]), grad)
+            grad_b = np.dot(np.ones([grad_u.shape[0]]), grad_u)
             self.b -= self.lr * grad_b
 
-        return grad
+        return grad_u
 
 
 class Model():
@@ -80,24 +80,24 @@ class Model():
             l.set_lr(lr=lr)
 
     def forward(self, x):
-        for layer in self.layers:
-            x = layer.forward(x)
-        self.output = x
+        for l in self.layers:
+            x = l.forward(x)
+        self.ys = x
         
         return x
 
     def backward(self, t):
-        En = (self.output - t) * self.output * (1 - self.output)
+        En = -(t - self.ys) * self.ys * (1 - self.ys)
         grad_pro = En
         w_pro = np.eye(En.shape[-1])
         
-        for i, layer in enumerate(self.layers[::-1]):
-            grad_pro = layer.backward(w_pro=w_pro, grad_pro=grad_pro)
-            w_pro = layer.w
+        for i, l in enumerate(self.layers[::-1]):
+            grad_pro = l.backward(w_pro=w_pro, grad_pro=grad_pro)
+            w_pro = l.w
 
 
     def loss(self, t):
-        Loss = np.sum((self.output - t) ** 2) / 2 / t.shape[0]
+        Loss = np.sum((self.ys - t) ** 2) / 2 / t.shape[0]
         return Loss   
 
 # +
@@ -185,7 +185,7 @@ model = Model(FullyConnectedLayer(in_n=img_height * img_width * 3, out_n=64, act
               FullyConnectedLayer(in_n=64, out_n=32, activation=sigmoid),
               FullyConnectedLayer(in_n=32, out_n=1, activation=sigmoid), lr=0.1)
 
-xs, ts, paths = data_load("../Dataset/train/images/", hf=True, vf=True, rot=1)
+xs, ts, paths = data_load("Dataset/train/images/", hf=True, vf=True, rot=1)
 
 mb = 64
 mbi = 0
@@ -213,14 +213,16 @@ for ite in range(1000):
 
     if ite % 50 == 0:
         print("ite:", ite+1, "Loss >>", loss)
-    
 
 # +
 # test
-xs, ts, paths = data_load("../Dataset/test/images/")
+xs, ts, paths = data_load("Dataset/test/images/")
 
 for i in range(len(xs)):
     x = xs[i]
     x = x.reshape(1, -1)
     out = model.forward(x)
     print("in >>", paths[i], ", out >>", out)
+# -
+
+
