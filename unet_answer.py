@@ -230,7 +230,7 @@ def train():
     np.random.seed(0)
     np.random.shuffle(train_ind)
     
-    for i in range(100):
+    for i in range(1000):
         if mbi + mb > train_N:
             mb_ind = train_ind[mbi:]
             np.random.shuffle(train_ind)
