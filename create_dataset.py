@@ -106,7 +106,7 @@ def data_load(path,hf=False,vf=False,rot=False):
 
     return xs, ts, paths
 
-xs, ts, paths = data_load("Dataset/train/images/",hf=True,vf=True,rot=1)
+xs, ts, paths = data_load("Dataset/train/images/",hf=True,vf=True,rot=30)
 # -
 
 # !pwd
