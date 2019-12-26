@@ -14,43 +14,52 @@ class UNet:
 
         # 1, 1, 3
         conv1_1 = UNet.conv(inputs, filters=64, l2_reg_scale=l2_reg, batchnorm_istraining=is_training)
-        conv1_2 = UNet.conv(conv1_1, filters=64, l2_reg_scale=l2_reg, batchnorm_istraining=is_training)
+        drop1_1 = UNet.dropout(conv1_1, dropout_rate=0.1, is_training=is_training)
+        conv1_2 = UNet.conv(drop1_1, filters=64, l2_reg_scale=l2_reg, batchnorm_istraining=is_training)
         pool1 = UNet.pool(conv1_2)
 
         # 1/2, 1/2, 64
         conv2_1 = UNet.conv(pool1, filters=128, l2_reg_scale=l2_reg, batchnorm_istraining=is_training)
-        conv2_2 = UNet.conv(conv2_1, filters=128, l2_reg_scale=l2_reg, batchnorm_istraining=is_training)
+        drop2_1 = UNet.dropout(conv2_1, dropout_rate=0.1, is_training=is_training)
+        conv2_2 = UNet.conv(drop2_1, filters=128, l2_reg_scale=l2_reg, batchnorm_istraining=is_training)
         pool2 = UNet.pool(conv2_2)
 
         # 1/4, 1/4, 128
         conv3_1 = UNet.conv(pool2, filters=256, l2_reg_scale=l2_reg, batchnorm_istraining=is_training)
-        conv3_2 = UNet.conv(conv3_1, filters=256, l2_reg_scale=l2_reg, batchnorm_istraining=is_training)
+        drop3_1 = UNet.dropout(conv3_1, dropout_rate=0.1, is_training=is_training)
+        conv3_2 = UNet.conv(drop3_1, filters=256, l2_reg_scale=l2_reg, batchnorm_istraining=is_training)
         pool3 = UNet.pool(conv3_2)
 
         # 1/8, 1/8, 256
         conv4_1 = UNet.conv(pool3, filters=512, l2_reg_scale=l2_reg, batchnorm_istraining=is_training)
-        conv4_2 = UNet.conv(conv4_1, filters=512, l2_reg_scale=l2_reg, batchnorm_istraining=is_training)
+        drop4_1 = UNet.dropout(conv4_1, dropout_rate=0.1, is_training=is_training)
+        conv4_2 = UNet.conv(drop4_1, filters=512, l2_reg_scale=l2_reg, batchnorm_istraining=is_training)
         pool4 = UNet.pool(conv4_2)
 
         # 1/16, 1/16, 512
         conv5_1 = UNet.conv(pool4, filters=1024, l2_reg_scale=l2_reg)
-        conv5_2 = UNet.conv(conv5_1, filters=1024, l2_reg_scale=l2_reg)
+        drop5_1 = UNet.dropout(conv5_1, dropout_rate=0.1, is_training=is_training)
+        conv5_2 = UNet.conv(drop5_1, filters=1024, l2_reg_scale=l2_reg)
         concated1 = tf.concat([UNet.conv_transpose(conv5_2, filters=512, l2_reg_scale=l2_reg), conv4_2], axis=3)
 
         conv_up1_1 = UNet.conv(concated1, filters=512, l2_reg_scale=l2_reg)
-        conv_up1_2 = UNet.conv(conv_up1_1, filters=512, l2_reg_scale=l2_reg)
+        drop_up1_1 = UNet.dropout(conv_up1_1, dropout_rate=0.1, is_training=is_training)
+        conv_up1_2 = UNet.conv(drop_up1_1, filters=512, l2_reg_scale=l2_reg)
         concated2 = tf.concat([UNet.conv_transpose(conv_up1_2, filters=256, l2_reg_scale=l2_reg), conv3_2], axis=3)
 
         conv_up2_1 = UNet.conv(concated2, filters=256, l2_reg_scale=l2_reg)
-        conv_up2_2 = UNet.conv(conv_up2_1, filters=256, l2_reg_scale=l2_reg)
+        drop_up2_1 = UNet.dropout(conv_up2_1, dropout_rate=0.1, is_training=is_training)
+        conv_up2_2 = UNet.conv(drop_up2_1, filters=256, l2_reg_scale=l2_reg)
         concated3 = tf.concat([UNet.conv_transpose(conv_up2_2, filters=128, l2_reg_scale=l2_reg), conv2_2], axis=3)
 
         conv_up3_1 = UNet.conv(concated3, filters=128, l2_reg_scale=l2_reg)
-        conv_up3_2 = UNet.conv(conv_up3_1, filters=128, l2_reg_scale=l2_reg)
+        drop_up3_1 = UNet.dropout(conv_up3_1, dropout_rate=0.1, is_training=is_training)
+        conv_up3_2 = UNet.conv(drop_up3_1, filters=128, l2_reg_scale=l2_reg)
         concated4 = tf.concat([UNet.conv_transpose(conv_up3_2, filters=64, l2_reg_scale=l2_reg), conv1_2], axis=3)
 
         conv_up4_1 = UNet.conv(concated4, filters=64, l2_reg_scale=l2_reg)
-        conv_up4_2 = UNet.conv(conv_up4_1, filters=64, l2_reg_scale=l2_reg)
+        drop_up4_1 = UNet.dropout(conv_up4_1, dropout_rate=0.1, is_training=is_training)
+        conv_up4_2 = UNet.conv(drop_up4_1, filters=64, l2_reg_scale=l2_reg)
         outputs = UNet.conv(conv_up4_2, filters=ld.DataSet.length_category(), kernel_size=[1, 1], activation=None)
 
         return Model(inputs, outputs, teacher, is_training)
@@ -108,6 +117,11 @@ class UNet:
             kernel_regularizer=regularizer
         )
         return conved
+
+    @staticmethod
+    def dropout(inputs, is_training, dropout_rate=0.1):
+        dropouted = tf.layers.dropout(inputs, rate=dropout_rate , training=is_training)
+        return dropouted
 
 
 class Model:
